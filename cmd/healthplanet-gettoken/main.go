@@ -3,10 +3,13 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"healthplanet-to-fitbit/config"
 	"io"
 	"net/http"
 	"net/url"
 	"os"
+
+	"healthplanet-to-fitbit/config"
 
 	"github.com/joho/godotenv"
 )
@@ -67,5 +70,20 @@ func main() {
 		fmt.Printf("failed to parse response: %v", err)
 		os.Exit(1)
 	}
+
+	cfg, err := config.LoadConfig()
+	if err != nil {
+		fmt.Printf("failed to load config: %v", err)
+		os.Exit(1)
+	}
+	cfg.HealthPlanet.ClientID = healthPlanetClientId
+	cfg.HealthPlanet.ClientSecret = healthPlanetClientSecret
+	cfg.HealthPlanet.AccessToken = resData.AccessToken
+	if err := config.SaveConfig(cfg); err != nil {
+		fmt.Printf("failed to save config: %v", err)
+		os.Exit(1)
+	}
+
 	fmt.Printf("AccessToken: %s\n", resData.AccessToken)
+	fmt.Println("Credentials saved to config file.")
 }

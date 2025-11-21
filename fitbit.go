@@ -39,18 +39,17 @@ func GetFitbitConfig(clientID string, clientSecret string) *oauth2.Config {
 }
 
 type FitbitAPI struct {
-	Client *http.Client
+	Client      *http.Client
+	TokenSource oauth2.TokenSource
 }
 
-func NewFitbitAPI(clientID string, clientSecret string, accessToken string, refreshToken string) *FitbitAPI {
+func NewFitbitAPI(clientID string, clientSecret string, token *oauth2.Token) *FitbitAPI {
 	cfg := GetFitbitConfig(clientID, clientSecret)
-	token := &oauth2.Token{
-		AccessToken:  accessToken,
-		RefreshToken: refreshToken,
-	}
-	cli := cfg.Client(context.Background(), token)
+	tokenSource := cfg.TokenSource(context.Background(), token)
+	cli := oauth2.NewClient(context.Background(), tokenSource)
 	return &FitbitAPI{
-		Client: cli,
+		Client:      cli,
+		TokenSource: tokenSource,
 	}
 }
 

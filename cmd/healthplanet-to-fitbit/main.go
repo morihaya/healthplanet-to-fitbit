@@ -3,29 +3,55 @@ package main
 import (
 	"context"
 	"fmt"
+	"healthplanet-to-fitbit/config"
 	"log"
 	"os"
 
 	htf "healthplanet-to-fitbit"
 
+	"healthplanet-to-fitbit/config"
+
 	"github.com/joho/godotenv"
+	"golang.org/x/oauth2"
 )
 
 func main() {
 	// Load environment variables
 	godotenv.Load(".env")
 
-	healthPlanetAccessToken := os.Getenv("HEALTHPLANET_ACCESS_TOKEN")
-	fitbitClientId := os.Getenv("FITBIT_CLIENT_ID")
-	fitbitClientSecret := os.Getenv("FITBIT_CLIENT_SECRET")
-	fitbitAccessToken := os.Getenv("FITBIT_ACCESS_TOKEN")
-	fitbitRefreshToken := os.Getenv("FITBIT_REFRESH_TOKEN")
+	// Load config
+	cfg, err := config.LoadConfig()
+	if err != nil {
+		log.Fatalf("failed to load config: %v", err)
+	}
+
+	// Fallback to env vars if config is empty (for backward compatibility or initial setup)
+	if cfg.HealthPlanet.AccessToken == "" {
+		cfg.HealthPlanet.AccessToken = os.Getenv("HEALTHPLANET_ACCESS_TOKEN")
+	}
+	if cfg.Fitbit.ClientID == "" {
+		cfg.Fitbit.ClientID = os.Getenv("FITBIT_CLIENT_ID")
+	}
+	if cfg.Fitbit.ClientSecret == "" {
+		cfg.Fitbit.ClientSecret = os.Getenv("FITBIT_CLIENT_SECRET")
+	}
+	if cfg.Fitbit.AccessToken == "" {
+		cfg.Fitbit.AccessToken = os.Getenv("FITBIT_ACCESS_TOKEN")
+	}
+	if cfg.Fitbit.RefreshToken == "" {
+		cfg.Fitbit.RefreshToken = os.Getenv("FITBIT_REFRESH_TOKEN")
+	}
 
 	// Initialize API clients
 	healthPlanetAPI := htf.HealthPlanetAPI{
-		AccessToken: healthPlanetAccessToken,
+		AccessToken: cfg.HealthPlanet.AccessToken,
 	}
-	fitbitApi := htf.NewFitbitAPI(fitbitClientId, fitbitClientSecret, fitbitAccessToken, fitbitRefreshToken)
+
+	fitbitToken := &oauth2.Token{
+		AccessToken:  cfg.Fitbit.AccessToken,
+		RefreshToken: cfg.Fitbit.RefreshToken,
+	}
+	fitbitApi := htf.NewFitbitAPI(cfg.Fitbit.ClientID, cfg.Fitbit.ClientSecret, fitbitToken)
 
 	// Initialize Context
 	ctx := context.Background()
@@ -68,6 +94,22 @@ func main() {
 		}
 
 		log.Printf("%s: saved, weight: %s, fat: %s", t, printFloat(data.Weight), printFloat(data.Fat))
+	}
+
+	// Check and save token if refreshed
+	newToken, err := fitbitApi.TokenSource.Token()
+	if err != nil {
+		log.Printf("failed to get current token: %v", err)
+	} else {
+		if newToken.AccessToken != cfg.Fitbit.AccessToken || newToken.RefreshToken != cfg.Fitbit.RefreshToken {
+			cfg.Fitbit.AccessToken = newToken.AccessToken
+			cfg.Fitbit.RefreshToken = newToken.RefreshToken
+			if err := config.SaveConfig(cfg); err != nil {
+				log.Printf("failed to save config: %v", err)
+			} else {
+				log.Printf("token refreshed and saved to config")
+			}
+		}
 	}
 
 	log.Printf("done")

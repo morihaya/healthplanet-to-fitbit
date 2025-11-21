@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
+	"healthplanet-to-fitbit/config"
 	"log"
 	"math/rand"
 	"net/http"
@@ -14,6 +15,7 @@ import (
 	"golang.org/x/oauth2"
 
 	htf "healthplanet-to-fitbit"
+	"healthplanet-to-fitbit/config"
 )
 
 func randomString(n int) string {
@@ -54,8 +56,23 @@ func main() {
 			return
 		}
 
+		cfg, err := config.LoadConfig()
+		if err != nil {
+			fmt.Fprintf(w, "failed to load config: %v", err)
+			return
+		}
+		cfg.Fitbit.ClientID = clientID
+		cfg.Fitbit.ClientSecret = clientSecret
+		cfg.Fitbit.AccessToken = token.AccessToken
+		cfg.Fitbit.RefreshToken = token.RefreshToken
+		if err := config.SaveConfig(cfg); err != nil {
+			fmt.Fprintf(w, "failed to save config: %v", err)
+			return
+		}
+
 		fmt.Fprintf(w, "AccessToken: %s\n", token.AccessToken)
-		fmt.Fprintf(w, "RefreshToken: %s", token.RefreshToken)
+		fmt.Fprintf(w, "RefreshToken: %s\n", token.RefreshToken)
+		fmt.Fprintf(w, "Credentials saved to config file.")
 	})
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
