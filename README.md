@@ -38,6 +38,12 @@
 go run cmd/healthplanet-to-fitbit/main.go
 ```
 
+期間を指定して同期する場合:
+```bash
+go run cmd/healthplanet-to-fitbit/main.go --from 2025-01-01 --to 2025-01-31
+```
+処理済みのレコードは `~/.config/healthplanet-to-fitbit/cache.json` にキャッシュされ、次回以降はスキップされます。
+
 設定ファイルから認証情報を読み込み、直近３か月の情報（体重・体脂肪率）が HeathPlanet から取得され、Fitbit へ登録される。
 Fitbit のアクセストークンが期限切れの場合は、自動的にリフレッシュされ、設定ファイルが更新される。
 
