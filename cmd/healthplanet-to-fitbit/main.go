@@ -3,12 +3,11 @@ package main
 import (
 	"context"
 	"fmt"
+	htf "healthplanet-to-fitbit"
+	"healthplanet-to-fitbit/config"
 	"log"
 	"os"
-
-	htf "healthplanet-to-fitbit"
-
-	"healthplanet-to-fitbit/config"
+	"strings"
 
 	"github.com/joho/godotenv"
 	"golang.org/x/oauth2"
@@ -52,17 +51,58 @@ func main() {
 	}
 	fitbitApi := htf.NewFitbitAPI(cfg.Fitbit.ClientID, cfg.Fitbit.ClientSecret, fitbitToken)
 
+	// Parse CLI flags
+	var from, to string
+	args := os.Args[1:]
+	for i := 0; i < len(args); i++ {
+		switch args[i] {
+		case "--from":
+			if i+1 < len(args) {
+				from = args[i+1]
+				i++
+			}
+		case "--to":
+			if i+1 < len(args) {
+				to = args[i+1]
+				i++
+			}
+		}
+	}
+
+	// Load cache
+	cacheData, err := config.LoadCache()
+	if err != nil {
+		log.Printf("failed to load cache: %v", err)
+	}
+
 	// Initialize Context
 	ctx := context.Background()
 
 	// Get data from HealthPlanet
-	scanData, err := healthPlanetAPI.AggregateInnerScanData(ctx)
+	// Format dates for API (YYYYMMDDHHMM)
+	var apiFrom, apiTo string
+	if from != "" {
+		apiFrom = from + "0000"
+		apiFrom = strings.ReplaceAll(apiFrom, "-", "")
+	}
+	if to != "" {
+		apiTo = to + "2359"
+		apiTo = strings.ReplaceAll(apiTo, "-", "")
+	}
+
+	scanData, err := healthPlanetAPI.AggregateInnerScanData(ctx, apiFrom, apiTo)
 	if err != nil {
 		log.Fatalf("failed to aggregate inner scan data: %+v", err)
 	}
 
 	// Save data to Fitbit
 	for t, data := range scanData {
+		dateStr := t.Format("2006-01-02")
+		if cacheData.Has(dateStr) {
+			log.Printf("%s: skipped from cache", t)
+			continue
+		}
+
 		weightLog, err := fitbitApi.GetBodyWeightLog(t)
 		if err != nil {
 			log.Fatalf("failed to get weight log from fitbit: %+v", err)
@@ -70,6 +110,7 @@ func main() {
 
 		if len(weightLog.Weight) > 0 {
 			log.Printf("%s: record is found", t)
+			cacheData.Add(dateStr)
 			continue
 		}
 
@@ -93,6 +134,12 @@ func main() {
 		}
 
 		log.Printf("%s: saved, weight: %s, fat: %s", t, printFloat(data.Weight), printFloat(data.Fat))
+		cacheData.Add(dateStr)
+	}
+
+	// Save cache
+	if err := config.SaveCache(cacheData); err != nil {
+		log.Printf("failed to save cache: %v", err)
 	}
 
 	// Check and save token if refreshed

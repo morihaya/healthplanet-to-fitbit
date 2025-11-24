@@ -65,13 +65,13 @@ type HealthPlanetAPI struct {
 	AccessToken string
 }
 
-func (api *HealthPlanetAPI) AggregateInnerScanData(ctx context.Context) (AggregatedInnerScanDataMap, error) {
-	weights, err := api.GetInnerScan(ctx, InnerScanTagWeight)
+func (api *HealthPlanetAPI) AggregateInnerScanData(ctx context.Context, from, to string) (AggregatedInnerScanDataMap, error) {
+	weights, err := api.GetInnerScan(ctx, InnerScanTagWeight, from, to)
 	if err != nil {
 		return nil, err
 	}
 
-	fats, err := api.GetInnerScan(ctx, InnerScanTagBodyFatPct)
+	fats, err := api.GetInnerScan(ctx, InnerScanTagBodyFatPct, from, to)
 	if err != nil {
 		return nil, err
 	}
@@ -119,10 +119,17 @@ func (api *HealthPlanetAPI) AggregateInnerScanData(ctx context.Context) (Aggrega
 	return m, nil
 }
 
-func (api *HealthPlanetAPI) GetInnerScan(ctx context.Context, tag InnerScanTag) (InnerScanResponse, error) {
+func (api *HealthPlanetAPI) GetInnerScan(ctx context.Context, tag InnerScanTag, from, to string) (InnerScanResponse, error) {
 	values := url.Values{}
 	values.Add("access_token", api.AccessToken)
 	values.Add("date", "1")
+	if from != "" {
+		values.Set("date", "0")
+		values.Add("from", from)
+	}
+	if to != "" {
+		values.Add("to", to)
+	}
 	values.Add("tag", strconv.Itoa(int(tag)))
 
 	url := fmt.Sprintf("https://www.healthplanet.jp/status/innerscan.json?%s", values.Encode())
