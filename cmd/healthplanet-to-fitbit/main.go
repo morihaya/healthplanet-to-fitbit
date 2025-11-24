@@ -82,11 +82,11 @@ func main() {
 	// Format dates for API (YYYYMMDDHHMM)
 	var apiFrom, apiTo string
 	if from != "" {
-		apiFrom = from + "0000"
+		apiFrom = from + "000000"
 		apiFrom = strings.ReplaceAll(apiFrom, "-", "")
 	}
 	if to != "" {
-		apiTo = to + "2359"
+		apiTo = to + "235959"
 		apiTo = strings.ReplaceAll(apiTo, "-", "")
 	}
 
