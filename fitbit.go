@@ -67,7 +67,7 @@ func (api *FitbitAPI) CreateWeightLog(weight float64, date time.Time) error {
 
 	if res.StatusCode < 200 || 400 <= res.StatusCode {
 		if res.StatusCode == 429 {
-			return errors.New("Fitbit API limit exceeded (150 requests/hour, approx 50 records). Limit resets at the top of the hour. Please try again later.")
+			return errors.New("Fitbit API limit exceeded (Status: 429). Limit is 150 requests/hour. Please try again later.")
 		}
 		return errors.Errorf("failed to create weight log in fitbit(invalid status code): %d", res.StatusCode)
 	}
@@ -89,7 +89,7 @@ func (api *FitbitAPI) CreateBodyFatLog(fat float64, date time.Time) error {
 
 	if res.StatusCode < 200 || 400 <= res.StatusCode {
 		if res.StatusCode == 429 {
-			return errors.New("Fitbit API limit exceeded (150 requests/hour, approx 50 records). Limit resets at the top of the hour. Please try again later.")
+			return errors.New("Fitbit API limit exceeded (Status: 429). Limit is 150 requests/hour. Please try again later.")
 		}
 		return errors.Errorf("failed to create fat log in fitbit(invalid status code): %d", res.StatusCode)
 	}
@@ -108,7 +108,7 @@ func (api *FitbitAPI) GetBodyWeightLog(date time.Time) (*GetWeightLogResponse, e
 
 	if res.StatusCode < 200 || 400 <= res.StatusCode {
 		if res.StatusCode == 429 {
-			return nil, errors.New("Fitbit API limit exceeded (150 requests/hour, approx 50 records). Limit resets at the top of the hour. Please try again later.")
+			return nil, errors.New("Fitbit API limit exceeded (Status: 429). Limit is 150 requests/hour. Please try again later.")
 		}
 		return nil, errors.Errorf("failed to get weight log in fitbit(invalid status code): %d", res.StatusCode)
 	}
