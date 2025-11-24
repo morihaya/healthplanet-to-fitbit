@@ -105,7 +105,8 @@ func main() {
 
 		weightLog, err := fitbitApi.GetBodyWeightLog(t)
 		if err != nil {
-			log.Fatalf("failed to get weight log from fitbit: %+v", err)
+			log.Printf("failed to get weight log from fitbit: %+v", err)
+			break
 		}
 
 		if len(weightLog.Weight) > 0 {
@@ -116,13 +117,15 @@ func main() {
 
 		if data.Weight != nil {
 			if err := fitbitApi.CreateWeightLog(*data.Weight, t); err != nil {
-				log.Fatalf("failed to create weight log: time: %s, err: %+v", t, err)
+				log.Printf("failed to create weight log: time: %s, err: %+v", t, err)
+				break
 			}
 		}
 
 		if data.Fat != nil {
 			if err := fitbitApi.CreateBodyFatLog(*data.Fat, t); err != nil {
-				log.Fatalf("failed to create fat log: time: %s, err: %+v", t, err)
+				log.Printf("failed to create fat log: time: %s, err: %+v", t, err)
+				break
 			}
 		}
 
