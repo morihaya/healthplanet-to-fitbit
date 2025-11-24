@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"healthplanet-to-fitbit/config"
 	"log"
 	"os"
 

@@ -5,7 +5,6 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
-	"healthplanet-to-fitbit/config"
 	"log"
 	"math/rand"
 	"net/http"
@@ -38,12 +37,35 @@ func genCodeChallenge() (verifier string, challenge string) {
 func main() {
 	godotenv.Load(".env")
 
-	clientID := os.Getenv("FITBIT_CLIENT_ID")
-	clientSecret := os.Getenv("FITBIT_CLIENT_SECRET")
+	cfg, err := config.LoadConfig()
+	if err != nil {
+		log.Fatalf("failed to load config: %v", err)
+	}
+
+	clientID := cfg.Fitbit.ClientID
+	if clientID == "" {
+		clientID = os.Getenv("FITBIT_CLIENT_ID")
+	}
+	if clientID == "" {
+		fmt.Print("Input Fitbit Client ID: ")
+		fmt.Scan(&clientID)
+	}
+
+	clientSecret := cfg.Fitbit.ClientSecret
+	if clientSecret == "" {
+		clientSecret = os.Getenv("FITBIT_CLIENT_SECRET")
+	}
+	if clientSecret == "" {
+		fmt.Print("Input Fitbit Client Secret: ")
+		fmt.Scan(&clientSecret)
+	}
 
 	conf := htf.GetFitbitConfig(clientID, clientSecret)
 
 	verifier, challenge := genCodeChallenge()
+
+	server := &http.Server{Addr: ":8080"}
+	done := make(chan struct{})
 
 	http.HandleFunc("/callback", func(w http.ResponseWriter, r *http.Request) {
 		code := r.URL.Query().Get("code")
@@ -56,11 +78,6 @@ func main() {
 			return
 		}
 
-		cfg, err := config.LoadConfig()
-		if err != nil {
-			fmt.Fprintf(w, "failed to load config: %v", err)
-			return
-		}
 		cfg.Fitbit.ClientID = clientID
 		cfg.Fitbit.ClientSecret = clientSecret
 		cfg.Fitbit.AccessToken = token.AccessToken
@@ -72,7 +89,8 @@ func main() {
 
 		fmt.Fprintf(w, "AccessToken: %s\n", token.AccessToken)
 		fmt.Fprintf(w, "RefreshToken: %s\n", token.RefreshToken)
-		fmt.Fprintf(w, "Credentials saved to config file.")
+		fmt.Fprintf(w, "Credentials saved to config file. You can close this window.")
+		close(done)
 	})
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -86,7 +104,15 @@ func main() {
 	})
 
 	fmt.Println("Open: http://localhost:8080")
-	if err := http.ListenAndServe(":8080", nil); err != nil {
-		log.Fatalf("failed to start server: %v", err)
+	go func() {
+		if err := server.ListenAndServe(); err != http.ErrServerClosed {
+			log.Fatalf("failed to start server: %v", err)
+		}
+	}()
+
+	<-done
+	if err := server.Shutdown(context.Background()); err != nil {
+		log.Fatalf("failed to shutdown server: %v", err)
 	}
+	fmt.Println("Token saved successfully. Exiting.")
 }
