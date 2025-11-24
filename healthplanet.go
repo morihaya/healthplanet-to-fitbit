@@ -66,14 +66,59 @@ type HealthPlanetAPI struct {
 }
 
 func (api *HealthPlanetAPI) AggregateInnerScanData(ctx context.Context, from, to string) (AggregatedInnerScanDataMap, error) {
-	weights, err := api.GetInnerScan(ctx, InnerScanTagWeight, from, to)
-	if err != nil {
-		return nil, err
-	}
+	var weights InnerScanResponse
+	var fats InnerScanResponse
 
-	fats, err := api.GetInnerScan(ctx, InnerScanTagBodyFatPct, from, to)
-	if err != nil {
-		return nil, err
+	if from == "" {
+		// Default behavior (last 3 months)
+		var err error
+		weights, err = api.GetInnerScan(ctx, InnerScanTagWeight, "", "")
+		if err != nil {
+			return nil, err
+		}
+		fats, err = api.GetInnerScan(ctx, InnerScanTagBodyFatPct, "", "")
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		// Parse dates
+		layout := "20060102150405"
+		startTime, err := time.Parse(layout, from)
+		if err != nil {
+			return nil, errors.Wrap(err, "invalid from date format")
+		}
+		endTime := time.Now()
+		if to != "" {
+			endTime, err = time.Parse(layout, to)
+			if err != nil {
+				return nil, errors.Wrap(err, "invalid to date format")
+			}
+		}
+
+		// Iterate in 3-month chunks
+		for current := startTime; current.Before(endTime); {
+			next := current.AddDate(0, 3, 0)
+			if next.After(endTime) {
+				next = endTime
+			}
+
+			chunkFrom := current.Format(layout)
+			chunkTo := next.Format(layout)
+
+			w, err := api.GetInnerScan(ctx, InnerScanTagWeight, chunkFrom, chunkTo)
+			if err != nil {
+				return nil, err
+			}
+			weights.Data = append(weights.Data, w.Data...)
+
+			f, err := api.GetInnerScan(ctx, InnerScanTagBodyFatPct, chunkFrom, chunkTo)
+			if err != nil {
+				return nil, err
+			}
+			fats.Data = append(fats.Data, f.Data...)
+
+			current = next.Add(time.Second) // Avoid overlap
+		}
 	}
 
 	m := make(AggregatedInnerScanDataMap, len(weights.Data))
