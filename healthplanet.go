@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"net/url"
@@ -169,13 +170,22 @@ func (api *HealthPlanetAPI) GetInnerScan(ctx context.Context, tag InnerScanTag, 
 	values.Add("access_token", api.AccessToken)
 	values.Add("date", "1")
 	if from != "" {
-		values.Set("date", "0")
+		values.Set("date", "1")
 		values.Add("from", from)
 	}
 	if to != "" {
 		values.Add("to", to)
 	}
 	values.Add("tag", strconv.Itoa(int(tag)))
+
+	// Debug logging
+	log.Printf("Requesting HealthPlanet: from=%s, to=%s, tag=%d", from, to, tag)
+	// Mask token for logging
+	maskedToken := "..."
+	if len(api.AccessToken) > 5 {
+		maskedToken = api.AccessToken[:5] + "..."
+	}
+	log.Printf("URL: https://www.healthplanet.jp/status/innerscan.json?access_token=%s&date=%s&from=%s&to=%s&tag=%d", maskedToken, values.Get("date"), from, to, tag)
 
 	url := fmt.Sprintf("https://www.healthplanet.jp/status/innerscan.json?%s", values.Encode())
 	res, err := http.Get(url)
@@ -185,7 +195,8 @@ func (api *HealthPlanetAPI) GetInnerScan(ctx context.Context, tag InnerScanTag, 
 	defer res.Body.Close()
 
 	if res.StatusCode < 200 || 400 <= res.StatusCode {
-		return InnerScanResponse{}, errors.Errorf("failed to get inner scan(invalid status code): %d", res.StatusCode)
+		bodyBytes, _ := io.ReadAll(res.Body)
+		return InnerScanResponse{}, errors.Errorf("failed to get inner scan(invalid status code): %d, body: %s", res.StatusCode, string(bodyBytes))
 	}
 
 	dec := json.NewDecoder(res.Body)
