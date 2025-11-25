@@ -8,6 +8,8 @@ import (
 	"net/url"
 	"os"
 
+	"healthplanet-to-fitbit/config"
+
 	"github.com/joho/godotenv"
 )
 
@@ -22,8 +24,29 @@ type AuthorizeResponse struct {
 func main() {
 	godotenv.Load(".env")
 
-	healthPlanetClientId := os.Getenv("HEALTHPLANET_CLIENT_ID")
-	healthPlanetClientSecret := os.Getenv("HEALTHPLANET_CLIENT_SECRET")
+	cfg, err := config.LoadConfig()
+	if err != nil {
+		fmt.Printf("failed to load config: %v", err)
+		os.Exit(1)
+	}
+
+	healthPlanetClientId := cfg.HealthPlanet.ClientID
+	if healthPlanetClientId == "" {
+		healthPlanetClientId = os.Getenv("HEALTHPLANET_CLIENT_ID")
+	}
+	if healthPlanetClientId == "" {
+		fmt.Print("Input HealthPlanet Client ID: ")
+		fmt.Scan(&healthPlanetClientId)
+	}
+
+	healthPlanetClientSecret := cfg.HealthPlanet.ClientSecret
+	if healthPlanetClientSecret == "" {
+		healthPlanetClientSecret = os.Getenv("HEALTHPLANET_CLIENT_SECRET")
+	}
+	if healthPlanetClientSecret == "" {
+		fmt.Print("Input HealthPlanet Client Secret: ")
+		fmt.Scan(&healthPlanetClientSecret)
+	}
 
 	values := url.Values{}
 	values.Add("client_id", healthPlanetClientId)
@@ -67,5 +90,14 @@ func main() {
 		fmt.Printf("failed to parse response: %v", err)
 		os.Exit(1)
 	}
+	cfg.HealthPlanet.ClientID = healthPlanetClientId
+	cfg.HealthPlanet.ClientSecret = healthPlanetClientSecret
+	cfg.HealthPlanet.AccessToken = resData.AccessToken
+	if err := config.SaveConfig(cfg); err != nil {
+		fmt.Printf("failed to save config: %v", err)
+		os.Exit(1)
+	}
+
 	fmt.Printf("AccessToken: %s\n", resData.AccessToken)
+	fmt.Println("Credentials saved to config file.")
 }

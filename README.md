@@ -7,24 +7,44 @@
 ## 環境変数
 
 `.env`ファイルまたは、環境変数に以下を定義する。
+※ アクセストークンやリフレッシュトークンは、後述のツールを実行することで自動的に設定ファイル（`~/.config/healthplanet-to-fitbit/config.json`）に保存されるため、手動での設定は不要です。
 
-| 環境変数名                 | 内容                                                                          |
-| -------------------------- | ----------------------------------------------------------------------------- |
-| HEALTHPLANET_CLIENT_ID     | HealthPlanet 公式サイトで発行できるクライアント ID                            |
-| HEALTHPLANET_CLIENT_SECRET | HealthPlanet 公式サイトで発行できるクライアントシークレット                   |
-| HEALTHPLANET_ACCESS_TOKEN  | HealthPlanet のアクセストークン（`healthplanet-gettoken` を使用して取得する） |
-| FITBIT_CLIENT_ID           | Fitbit 公式サイトで発行できるクライアント ID                                  |
-| FITBIT_CLIENT_SECRET       | Fitbit 公式サイトで発行できるクライアントシークレット                         |
-| FITBIT_ACCESS_TOKEN        | Fitbit のアクセストークン（`fitbit-gettoken` を使用して取得する）             |
-| FITBIT_REFRESH_TOKEN       | Fitbit のリフレッシュトークン（`fitbit-gettoken` を使用して取得する）         |
+| 環境変数名                 | 内容                                                        |
+| -------------------------- | ----------------------------------------------------------- |
+| HEALTHPLANET_CLIENT_ID     | HealthPlanet 公式サイトで発行できるクライアント ID          |
+| HEALTHPLANET_CLIENT_SECRET | HealthPlanet 公式サイトで発行できるクライアントシークレット |
+| FITBIT_CLIENT_ID           | Fitbit 公式サイトで発行できるクライアント ID                |
+| FITBIT_CLIENT_SECRET       | Fitbit 公式サイトで発行できるクライアントシークレット       |
 
 ## 事前準備
 
-- HealthPlant, Fitbit の公式サイトから各種 API キーを取得し、環境変数に登録する。
-- `fitbit-gettoken` と `healthplanet-gettoken` を使用して、各種トークンを取得し、環境変数に登録する。
+1. HealthPlant, Fitbit の公式サイトから各種 API キーを取得し、`.env` ファイル等で環境変数に登録する。
+2. 以下のコマンドを実行し、HealthPlanet のトークンを取得・保存する。
+   ```bash
+   go run cmd/healthplanet-gettoken/main.go
+   ```
+3. 以下のコマンドを実行し、Fitbit のトークンを取得・保存する。
+   ```bash
+   go run cmd/fitbit-gettoken/main.go
+   ```
+
+上記を実行すると、`~/.config/healthplanet-to-fitbit/config.json` に認証情報が保存されます。
 
 ## 使用方法
 
 `healthplanet-to-fitbit` を実行する。
 
-直近３か月の情報（体重・体脂肪率）が HeathPlanet から取得され、Fitbit へ登録される。繰り返し起動するとアクセス数の制限に引っかかる場合があるため、時間をおいて起動することを推奨する。
+```bash
+go run cmd/healthplanet-to-fitbit/main.go
+```
+
+期間を指定して同期する場合:
+```bash
+go run cmd/healthplanet-to-fitbit/main.go --from 2025-01-01 --to 2025-01-31
+```
+処理済みのレコードは `~/.config/healthplanet-to-fitbit/cache.json` にキャッシュされ、次回以降はスキップされます。
+
+設定ファイルから認証情報を読み込み、直近３か月の情報（体重・体脂肪率）が HeathPlanet から取得され、Fitbit へ登録される。
+Fitbit のアクセストークンが期限切れの場合は、自動的にリフレッシュされ、設定ファイルが更新される。
+
+繰り返し起動するとアクセス数の制限に引っかかる場合があるため、時間をおいて起動することを推奨する。

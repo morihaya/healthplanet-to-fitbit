@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"net/url"
@@ -65,15 +66,60 @@ type HealthPlanetAPI struct {
 	AccessToken string
 }
 
-func (api *HealthPlanetAPI) AggregateInnerScanData(ctx context.Context) (AggregatedInnerScanDataMap, error) {
-	weights, err := api.GetInnerScan(ctx, InnerScanTagWeight)
-	if err != nil {
-		return nil, err
-	}
+func (api *HealthPlanetAPI) AggregateInnerScanData(ctx context.Context, from, to string) (AggregatedInnerScanDataMap, error) {
+	var weights InnerScanResponse
+	var fats InnerScanResponse
 
-	fats, err := api.GetInnerScan(ctx, InnerScanTagBodyFatPct)
-	if err != nil {
-		return nil, err
+	if from == "" {
+		// Default behavior (last 3 months)
+		var err error
+		weights, err = api.GetInnerScan(ctx, InnerScanTagWeight, "", "")
+		if err != nil {
+			return nil, err
+		}
+		fats, err = api.GetInnerScan(ctx, InnerScanTagBodyFatPct, "", "")
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		// Parse dates
+		layout := "20060102150405"
+		startTime, err := time.Parse(layout, from)
+		if err != nil {
+			return nil, errors.Wrap(err, "invalid from date format")
+		}
+		endTime := time.Now()
+		if to != "" {
+			endTime, err = time.Parse(layout, to)
+			if err != nil {
+				return nil, errors.Wrap(err, "invalid to date format")
+			}
+		}
+
+		// Iterate in 3-month chunks
+		for current := startTime; current.Before(endTime); {
+			next := current.AddDate(0, 3, 0)
+			if next.After(endTime) {
+				next = endTime
+			}
+
+			chunkFrom := current.Format(layout)
+			chunkTo := next.Format(layout)
+
+			w, err := api.GetInnerScan(ctx, InnerScanTagWeight, chunkFrom, chunkTo)
+			if err != nil {
+				return nil, err
+			}
+			weights.Data = append(weights.Data, w.Data...)
+
+			f, err := api.GetInnerScan(ctx, InnerScanTagBodyFatPct, chunkFrom, chunkTo)
+			if err != nil {
+				return nil, err
+			}
+			fats.Data = append(fats.Data, f.Data...)
+
+			current = next.Add(time.Second) // Avoid overlap
+		}
 	}
 
 	m := make(AggregatedInnerScanDataMap, len(weights.Data))
@@ -119,10 +165,17 @@ func (api *HealthPlanetAPI) AggregateInnerScanData(ctx context.Context) (Aggrega
 	return m, nil
 }
 
-func (api *HealthPlanetAPI) GetInnerScan(ctx context.Context, tag InnerScanTag) (InnerScanResponse, error) {
+func (api *HealthPlanetAPI) GetInnerScan(ctx context.Context, tag InnerScanTag, from, to string) (InnerScanResponse, error) {
 	values := url.Values{}
 	values.Add("access_token", api.AccessToken)
 	values.Add("date", "1")
+	if from != "" {
+		values.Set("date", "1")
+		values.Add("from", from)
+	}
+	if to != "" {
+		values.Add("to", to)
+	}
 	values.Add("tag", strconv.Itoa(int(tag)))
 
 	url := fmt.Sprintf("https://www.healthplanet.jp/status/innerscan.json?%s", values.Encode())
@@ -133,7 +186,8 @@ func (api *HealthPlanetAPI) GetInnerScan(ctx context.Context, tag InnerScanTag) 
 	defer res.Body.Close()
 
 	if res.StatusCode < 200 || 400 <= res.StatusCode {
-		return InnerScanResponse{}, errors.Errorf("failed to get inner scan(invalid status code): %d", res.StatusCode)
+		bodyBytes, _ := io.ReadAll(res.Body)
+		return InnerScanResponse{}, errors.Errorf("failed to get inner scan(invalid status code): %d, body: %s", res.StatusCode, string(bodyBytes))
 	}
 
 	dec := json.NewDecoder(res.Body)
