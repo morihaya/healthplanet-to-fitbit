@@ -1,4 +1,4 @@
-FROM golang:1.19 as builder
+FROM golang:1.23 as builder
 
 WORKDIR /usr/src/app
 
@@ -9,7 +9,7 @@ COPY . .
 RUN make all
 
 
-FROM golang:1.19
+FROM golang:1.23
 
 WORKDIR /usr/src/app
 COPY --from=builder /usr/src/app/bin/* /usr/local/bin/

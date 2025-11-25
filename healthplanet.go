@@ -64,6 +64,7 @@ type InnerScanResponse struct {
 
 type HealthPlanetAPI struct {
 	AccessToken string
+	Client      *http.Client
 }
 
 func (api *HealthPlanetAPI) AggregateInnerScanData(ctx context.Context, from, to string) (AggregatedInnerScanDataMap, error) {
@@ -179,7 +180,13 @@ func (api *HealthPlanetAPI) GetInnerScan(ctx context.Context, tag InnerScanTag, 
 	values.Add("tag", strconv.Itoa(int(tag)))
 
 	url := fmt.Sprintf("https://www.healthplanet.jp/status/innerscan.json?%s", values.Encode())
-	res, err := http.Get(url)
+
+	client := api.Client
+	if client == nil {
+		client = http.DefaultClient
+	}
+
+	res, err := client.Get(url)
 	if err != nil {
 		return InnerScanResponse{}, errors.Wrap(err, "failed to fetch response")
 	}
