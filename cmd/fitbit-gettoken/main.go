@@ -35,7 +35,7 @@ func genCodeChallenge() (verifier string, challenge string) {
 }
 
 func main() {
-	godotenv.Load(".env")
+	_ = godotenv.Load(".env")
 
 	cfg, err := config.LoadConfig()
 	if err != nil {
@@ -48,7 +48,9 @@ func main() {
 	}
 	if clientID == "" {
 		fmt.Print("Input Fitbit Client ID: ")
-		fmt.Scan(&clientID)
+		if _, err := fmt.Scan(&clientID); err != nil {
+			log.Fatalf("failed to scan client id: %v", err)
+		}
 	}
 
 	clientSecret := cfg.Fitbit.ClientSecret
@@ -57,7 +59,9 @@ func main() {
 	}
 	if clientSecret == "" {
 		fmt.Print("Input Fitbit Client Secret: ")
-		fmt.Scan(&clientSecret)
+		if _, err := fmt.Scan(&clientSecret); err != nil {
+			log.Fatalf("failed to scan client secret: %v", err)
+		}
 	}
 
 	conf := htf.GetFitbitConfig(clientID, clientSecret)
