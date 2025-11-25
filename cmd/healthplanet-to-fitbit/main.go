@@ -15,7 +15,7 @@ import (
 
 func main() {
 	// Load environment variables
-	godotenv.Load(".env")
+	_ = godotenv.Load(".env")
 
 	// Load config
 	cfg, err := config.LoadConfig()

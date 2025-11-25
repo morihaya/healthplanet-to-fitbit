@@ -22,7 +22,7 @@ type AuthorizeResponse struct {
 }
 
 func main() {
-	godotenv.Load(".env")
+	_ = godotenv.Load(".env")
 
 	cfg, err := config.LoadConfig()
 	if err != nil {
@@ -36,7 +36,10 @@ func main() {
 	}
 	if healthPlanetClientId == "" {
 		fmt.Print("Input HealthPlanet Client ID: ")
-		fmt.Scan(&healthPlanetClientId)
+		if _, err := fmt.Scan(&healthPlanetClientId); err != nil {
+			fmt.Printf("failed to scan client id: %v\n", err)
+			os.Exit(1)
+		}
 	}
 
 	healthPlanetClientSecret := cfg.HealthPlanet.ClientSecret
@@ -45,7 +48,10 @@ func main() {
 	}
 	if healthPlanetClientSecret == "" {
 		fmt.Print("Input HealthPlanet Client Secret: ")
-		fmt.Scan(&healthPlanetClientSecret)
+		if _, err := fmt.Scan(&healthPlanetClientSecret); err != nil {
+			fmt.Printf("failed to scan client secret: %v\n", err)
+			os.Exit(1)
+		}
 	}
 
 	values := url.Values{}
@@ -59,7 +65,10 @@ func main() {
 
 	fmt.Print("Input code: ")
 	var code string
-	fmt.Scan(&code)
+	if _, err := fmt.Scan(&code); err != nil {
+		fmt.Printf("failed to scan code: %v\n", err)
+		os.Exit(1)
+	}
 
 	values = url.Values{}
 	values.Add("client_id", healthPlanetClientId)
