@@ -84,6 +84,7 @@ func main() {
 		os.Exit(1)
 	}
 
+	fmt.Printf("Response Body: %s\n", string(resBody))
 	fmt.Println("")
 	var resData AuthorizeResponse
 	if err = json.Unmarshal(resBody, &resData); err != nil {
@@ -93,6 +94,7 @@ func main() {
 	cfg.HealthPlanet.ClientID = healthPlanetClientId
 	cfg.HealthPlanet.ClientSecret = healthPlanetClientSecret
 	cfg.HealthPlanet.AccessToken = resData.AccessToken
+	cfg.HealthPlanet.RefreshToken = resData.RefreshToken
 	if err := config.SaveConfig(cfg); err != nil {
 		fmt.Printf("failed to save config: %v", err)
 		os.Exit(1)

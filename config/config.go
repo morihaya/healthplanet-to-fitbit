@@ -11,6 +11,7 @@ type Config struct {
 		ClientID     string `json:"client_id"`
 		ClientSecret string `json:"client_secret"`
 		AccessToken  string `json:"access_token"`
+		RefreshToken string `json:"refresh_token"`
 	} `json:"health_planet"`
 	Fitbit struct {
 		ClientID     string `json:"client_id"`

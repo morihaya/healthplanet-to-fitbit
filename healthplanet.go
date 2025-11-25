@@ -180,6 +180,8 @@ func (api *HealthPlanetAPI) GetInnerScan(ctx context.Context, tag InnerScanTag, 
 	values.Add("tag", strconv.Itoa(int(tag)))
 
 	url := fmt.Sprintf("https://www.healthplanet.jp/status/innerscan.json?%s", values.Encode())
+	log.Printf("Request URL: %s", url)
+	log.Printf("Access Token: %s", api.AccessToken)
 
 	client := api.Client
 	if client == nil {
