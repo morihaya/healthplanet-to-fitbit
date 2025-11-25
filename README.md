@@ -1,6 +1,8 @@
 # healthplanet-to-fitbit
 
-[![dockeri.co](https://dockeri.co/image/tattsun/healthplanet-to-fitbit)](https://hub.docker.com/r/tattsun/healthplanet-to-fitbit)
+もりはや改良版
+
+[![Test](https://github.com/morihaya/healthplanet-to-fitbit/actions/workflows/test.yml/badge.svg)](https://github.com/morihaya/healthplanet-to-fitbit/actions/workflows/test.yml)
 
 [HealthPlanet](https://www.healthplanet.jp/)に登録された体重・体脂肪率情報を Fitbit へ転送する。
 
