@@ -52,9 +52,15 @@ Fitbit のアクセストークンが期限切れの場合は、自動的にリ�
 
 ## API制限について
 
+各APIにはレート制限があり、大量のデータを同期しようとしてエラーが発生した場合は、1時間ほど待ってから再度実行してください。
+
+### HealthPlanet API
+
 HealthPlanet API には **60回/時** 程度の厳しいレートリミットがあるようです（[公式ドキュメント](https://www.healthplanet.jp/apis/api.html)には明記されていませんが、短時間に多数のリクエストを送ると `400 Bad Request (Error 401)` が返ることがあります）。
 
-大量のデータを同期しようとしてエラーが発生した場合は、1時間ほど待ってから再度実行してください。
+### Fitbit API
+
+Fitbit API には **150回/時** 程度の厳しいレートリミットがあるようです（[公式ドキュメント](https://dev.fitbit.com/build/reference)には明記されていませんが、短時間に多数のリクエストを送ると `429 Too Many Requests` が返ることがあります）。[参考](https://community.fitbit.com/t5/Web-API-Development/How-do-API-rate-limits-work/td-p/324370)
 
 ## テスト
 
@@ -68,3 +74,4 @@ go test ./...
 
 - [HealthPlanet API](https://www.healthplanet.jp/apis/api.html)
 - [Fitbit API](https://dev.fitbit.com/build/reference)
+- [Fitbit community: How do API rate limits work?](https://community.fitbit.com/t5/Web-API-Development/How-do-API-rate-limits-work/td-p/324370)
