@@ -178,15 +178,6 @@ func (api *HealthPlanetAPI) GetInnerScan(ctx context.Context, tag InnerScanTag, 
 	}
 	values.Add("tag", strconv.Itoa(int(tag)))
 
-	// Debug logging
-	log.Printf("Requesting HealthPlanet: from=%s, to=%s, tag=%d", from, to, tag)
-	// Mask token for logging
-	maskedToken := "..."
-	if len(api.AccessToken) > 5 {
-		maskedToken = api.AccessToken[:5] + "..."
-	}
-	log.Printf("URL: https://www.healthplanet.jp/status/innerscan.json?access_token=%s&date=%s&from=%s&to=%s&tag=%d", maskedToken, values.Get("date"), from, to, tag)
-
 	url := fmt.Sprintf("https://www.healthplanet.jp/status/innerscan.json?%s", values.Encode())
 	res, err := http.Get(url)
 	if err != nil {

@@ -44,11 +44,6 @@ func main() {
 	healthPlanetAPI := htf.HealthPlanetAPI{
 		AccessToken: cfg.HealthPlanet.AccessToken,
 	}
-	if len(healthPlanetAPI.AccessToken) > 5 {
-		log.Printf("Loaded HealthPlanet AccessToken: %s...", healthPlanetAPI.AccessToken[:5])
-	} else {
-		log.Printf("Loaded HealthPlanet AccessToken is empty or too short")
-	}
 
 	fitbitToken := &oauth2.Token{
 		AccessToken:  cfg.Fitbit.AccessToken,
