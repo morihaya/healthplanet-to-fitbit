@@ -37,7 +37,9 @@ This project synchronizes weight and body fat percentage data from [HealthPlanet
 ## Setup and Usage
 
 ### Environment Variables
-The following environment variables are required (can be in `.env`):
+
+The following environment variables are required for the **setup tools** (`healthplanet-gettoken`, `fitbit-gettoken`) to acquire initial tokens. These can be defined in a `.env` file.
+Once the setup tools are run, credentials are saved to `~/.config/healthplanet-to-fitbit/config.json`, which is used by the main application.
 - `HEALTHPLANET_CLIENT_ID`
 - `HEALTHPLANET_CLIENT_SECRET`
 - `FITBIT_CLIENT_ID`
