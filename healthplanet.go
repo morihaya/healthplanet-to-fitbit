@@ -194,7 +194,7 @@ func (api *HealthPlanetAPI) GetInnerScan(ctx context.Context, tag InnerScanTag, 
 
 	if res.StatusCode < 200 || 400 <= res.StatusCode {
 		bodyBytes, _ := io.ReadAll(res.Body)
-		return InnerScanResponse{}, errors.Errorf("failed to get inner scan(invalid status code): %d, body: %s", res.StatusCode, string(bodyBytes))
+		return InnerScanResponse{}, errors.Errorf("failed to get inner scan(invalid status code): %d, body: %s. Note: HealthPlanet API has a rate limit (approx 60 req/hour). If you see 400/401, please wait a while.", res.StatusCode, string(bodyBytes))
 	}
 
 	dec := json.NewDecoder(res.Body)

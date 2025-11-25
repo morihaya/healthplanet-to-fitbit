@@ -50,7 +50,11 @@ go run cmd/healthplanet-to-fitbit/main.go --from 2025-01-01 --to 2025-01-31
 設定ファイルから認証情報を読み込み、直近３か月の情報（体重・体脂肪率）が HeathPlanet から取得され、Fitbit へ登録される。
 Fitbit のアクセストークンが期限切れの場合は、自動的にリフレッシュされ、設定ファイルが更新される。
 
-繰り返し起動するとアクセス数の制限に引っかかる場合があるため、時間をおいて起動することを推奨する。
+## API制限について
+
+HealthPlanet API には **60回/時** 程度の厳しいレートリミットがあるようです（[公式ドキュメント](https://www.healthplanet.jp/apis/api.html)には明記されていませんが、短時間に多数のリクエストを送ると `400 Bad Request (Error 401)` が返ることがあります）。
+
+大量のデータを同期しようとしてエラーが発生した場合は、1時間ほど待ってから再度実行してください。
 
 ## テスト
 
@@ -59,3 +63,8 @@ Fitbit のアクセストークンが期限切れの場合は、自動的にリ�
 ```bash
 go test ./...
 ```
+
+## References
+
+- [HealthPlanet API](https://www.healthplanet.jp/apis/api.html)
+- [Fitbit API](https://dev.fitbit.com/build/reference)
