@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/joho/godotenv"
 	"golang.org/x/oauth2"
@@ -84,10 +85,17 @@ func main() {
 	if from != "" {
 		apiFrom = from + "000000"
 		apiFrom = strings.ReplaceAll(apiFrom, "-", "")
+	} else {
+		// Default to 3 months ago
+		apiFrom = time.Now().AddDate(0, -3, 0).Format("20060102") + "000000"
 	}
+
 	if to != "" {
 		apiTo = to + "235959"
 		apiTo = strings.ReplaceAll(apiTo, "-", "")
+	} else {
+		// Default to now
+		apiTo = time.Now().Format("20060102") + "235959"
 	}
 
 	scanData, err := healthPlanetAPI.AggregateInnerScanData(ctx, apiFrom, apiTo)
@@ -97,9 +105,13 @@ func main() {
 
 	// Save data to Fitbit
 	for t, data := range scanData {
-		dateStr := t.Format("2006-01-02")
-		if cacheData.Has(dateStr) {
-			log.Printf("%s: skipped from cache", t)
+		// Convert to JST for logging and cache key
+		jst := time.FixedZone("Asia/Tokyo", 9*60*60)
+		tJST := t.In(jst)
+		cacheKey := tJST.Format("2006-01-02 15:04:05")
+
+		if cacheData.Has(cacheKey) {
+			log.Printf("%s: skipped from cache", tJST)
 			continue
 		}
 
@@ -110,21 +122,21 @@ func main() {
 		}
 
 		if len(weightLog.Weight) > 0 {
-			log.Printf("%s: record is found", t)
-			cacheData.Add(dateStr)
+			log.Printf("%s: record is found", tJST)
+			cacheData.Add(cacheKey)
 			continue
 		}
 
 		if data.Weight != nil {
 			if err := fitbitApi.CreateWeightLog(*data.Weight, t); err != nil {
-				log.Printf("failed to create weight log: time: %s, err: %+v", t, err)
+				log.Printf("failed to create weight log: time: %s, err: %+v", tJST, err)
 				break
 			}
 		}
 
 		if data.Fat != nil {
 			if err := fitbitApi.CreateBodyFatLog(*data.Fat, t); err != nil {
-				log.Printf("failed to create fat log: time: %s, err: %+v", t, err)
+				log.Printf("failed to create fat log: time: %s, err: %+v", tJST, err)
 				break
 			}
 		}
@@ -136,8 +148,8 @@ func main() {
 			return fmt.Sprintf("%.2f", *f)
 		}
 
-		log.Printf("%s: saved, weight: %s, fat: %s", t, printFloat(data.Weight), printFloat(data.Fat))
-		cacheData.Add(dateStr)
+		log.Printf("%s: saved, weight: %s, fat: %s", tJST, printFloat(data.Weight), printFloat(data.Fat))
+		cacheData.Add(cacheKey)
 	}
 
 	// Save cache
